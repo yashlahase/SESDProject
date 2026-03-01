@@ -1,0 +1,9 @@
+{
+  "name": "KiranaReach",
+  "short_name": "KiranaReach",
+  "description": "Hyperlocal quick commerce with offline support",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#0f5c4b"
+}

@@ -12,6 +12,7 @@ export const metadata: Metadata = {
   title: "KiranaReach — Hyperlocal quick commerce",
   description:
     "Offline-first marketplace connecting neighborhood stores with customers and delivery partners.",
+  manifest: "/manifest.webmanifest",
 };
 
 export default function RootLayout({
