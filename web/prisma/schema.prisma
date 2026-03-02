@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite: use string fields (Prisma enums not supported on SQLite in v5)
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String // CUSTOMER | STORE_OWNER | DELIVERY | ADMIN
+  suspended    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  store               Store?
+  ordersAsCustomer    Order[]                  @relation("CustomerOrders")
+  partnerDeliveries   Delivery[]               @relation("PartnerDeliveries")
+  deliveryProfile     DeliveryPartnerProfile?
+  messages            Message[]
+  refreshTokens       RefreshToken[]
+}
+
+model Store {
+  id          String   @id @default(uuid())
+  ownerId     String   @unique
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  address     String
+  lat         Float
+  lng         Float
+  isApproved  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products Product[]
+  orders   Order[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  priceCents  Int
+  stock       Int      @default(0)
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+}
+
+model Order {
+  id               String   @id @default(uuid())
+  idempotencyKey   String?  @unique
+  customerId       String
+  customer         User     @relation("CustomerOrders", fields: [customerId], references: [id])
+  storeId          String
+  store            Store    @relation(fields: [storeId], references: [id])
+  status           String   @default("PENDING") // OrderStatus
+  deliveryAddress  String
+  totalCents       Int
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  items    OrderItem[]
+  delivery Delivery?
+  chatRoom ChatRoom?
+}
+
+model OrderItem {
+  id             String  @id @default(uuid())
+  orderId        String
+  order          Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId      String
+  product        Product @relation(fields: [productId], references: [id])
+  quantity       Int
+  unitPriceCents Int
+}
+
+model Delivery {
+  id        String   @id @default(uuid())
+  orderId   String   @unique
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  partnerId String?
+  partner   User?    @relation("PartnerDeliveries", fields: [partnerId], references: [id])
+  status    String   @default("UNASSIGNED") // DeliveryStatus
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DeliveryPartnerProfile {
+  id          String  @id @default(uuid())
+  userId      String  @unique
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isAvailable Boolean @default(true)
+  vehicleInfo String?
+}
+
+model ChatRoom {
+  id        String    @id @default(uuid())
+  orderId   String    @unique
+  order     Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  messages  Message[]
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  roomId      String
+  room        ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User     @relation(fields: [senderId], references: [id])
+  content     String
+  clientMsgId String?  @unique
+  createdAt   DateTime @default(now())
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
